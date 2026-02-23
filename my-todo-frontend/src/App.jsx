@@ -7,11 +7,20 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [input, setInput] = useState("");
 
-  // Load tasks on startup
+  // Load tasks on startup  
   useEffect(() => {
     fetch(`${API_URL}/tasks`)
-      .then(res => res.json())
-      .then(data => setTasks(data))
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) {
+          setTasks(data);
+        } else {
+          console.error("Expected an array of tasks, but got:", data);
+        }
+      })
       .catch(err => console.error("Error fetching tasks:", err));
   }, []);
 
@@ -23,18 +32,30 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: input })
       });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `Server responded with ${res.status}`);
+      }
+
       const newTask = await res.json();
-      setTasks([...tasks, newTask]);
-      setInput("");
+      if (newTask && newTask._id) {
+        setTasks(prev => [...prev, newTask]);
+        setInput("");
+      } else {
+        console.error("Invalid task object received from server:", newTask);
+      }
     } catch (err) {
       console.error("Error adding task:", err);
+      alert(`Failed to add task: ${err.message}`);
     }
   };
 
   const deleteTask = async (id) => {
     try {
-      await fetch(`${API_URL}/tasks/${id}`, { method: 'DELETE' });
-      setTasks(tasks.filter(task => task._id !== id));
+      const res = await fetch(`${API_URL}/tasks/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error("Failed to delete task");
+      setTasks(prev => prev.filter(task => task._id !== id));
     } catch (err) {
       console.error("Error deleting task:", err);
     }
@@ -47,8 +68,13 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed: !currentStatus })
       });
+
+      if (!res.ok) throw new Error("Failed to update task");
+
       const updatedTask = await res.json();
-      setTasks(tasks.map(t => (t._id === id ? updatedTask : t)));
+      if (updatedTask && updatedTask._id) {
+        setTasks(prev => prev.map(t => (t._id === id ? updatedTask : t)));
+      }
     } catch (err) {
       console.error("Error toggling task:", err);
     }
