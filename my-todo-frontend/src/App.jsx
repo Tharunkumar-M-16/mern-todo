@@ -1,42 +1,57 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function App() {
   const [tasks, setTasks] = useState([]);
   const [input, setInput] = useState("");
 
   // Load tasks on startup
   useEffect(() => {
-    fetch('http://localhost:3000/tasks')
+    fetch(`${API_URL}/tasks`)
       .then(res => res.json())
-      .then(data => setTasks(data));
+      .then(data => setTasks(data))
+      .catch(err => console.error("Error fetching tasks:", err));
   }, []);
 
   const addTask = async () => {
     if (!input.trim()) return;
-    const res = await fetch('http://localhost:3000/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: input })
-    });
-    const newTask = await res.json();
-    setTasks([...tasks, newTask]);
-    setInput("");
+    try {
+      const res = await fetch(`${API_URL}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: input })
+      });
+      const newTask = await res.json();
+      setTasks([...tasks, newTask]);
+      setInput("");
+    } catch (err) {
+      console.error("Error adding task:", err);
+    }
   };
 
   const deleteTask = async (id) => {
-    await fetch(`http://localhost:3000/tasks/${id}`, { method: 'DELETE' });
-    setTasks(tasks.filter(task => task._id !== id));
+    try {
+      await fetch(`${API_URL}/tasks/${id}`, { method: 'DELETE' });
+      setTasks(tasks.filter(task => task._id !== id));
+    } catch (err) {
+      console.error("Error deleting task:", err);
+    }
   };
 
   const toggleComplete = async (id, currentStatus) => {
-    const res = await fetch(`http://localhost:3000/tasks/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ completed: !currentStatus })
-    });
-    const updatedTask = await res.json();
-    setTasks(tasks.map(t => (t._id === id ? updatedTask : t)));
+    try {
+      const res = await fetch(`${API_URL}/tasks/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: !currentStatus })
+      });
+      const updatedTask = await res.json();
+      setTasks(tasks.map(t => (t._id === id ? updatedTask : t)));
+    } catch (err) {
+      console.error("Error toggling task:", err);
+    }
   };
 
   const handleKeyDown = (e) => {
