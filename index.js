@@ -12,9 +12,14 @@ app.use(cors({
 }));         // Allows your React frontend to talk to this server
 
 // --- MONGODB CONNECTION ---
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+})
     .then(() => console.log("✅ Connected to MongoDB"))
-    .catch(err => console.error("❌ MongoDB connection error:", err));
+    .catch(err => {
+        console.error("❌ MongoDB connection error:", err);
+        // Do not crash, but log the error clearly
+    });
 
 // --- DATABASE MODEL (The Blueprint) ---
 const taskSchema = new mongoose.Schema({
