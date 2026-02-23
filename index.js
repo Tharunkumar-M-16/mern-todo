@@ -7,7 +7,9 @@ const app = express();
 
 // --- MIDDLEWARE ---
 app.use(express.json()); // Allows the server to read JSON in request bodies
-app.use(cors());         // Allows your React frontend to talk to this server
+app.use(cors({
+  origin: 'https://mern-todo-njik.vercel.app/' // Replace this with your actual Vercel URL
+}));         // Allows your React frontend to talk to this server
 
 // --- MONGODB CONNECTION ---
 mongoose.connect(process.env.MONGO_URI)
